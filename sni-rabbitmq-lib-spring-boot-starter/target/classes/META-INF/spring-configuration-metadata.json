@@ -1,0 +1,81 @@
+{
+  "groups": [
+    {
+      "name": "ans.snirabbitmq",
+      "type": "br.gov.ans.snirabbitmq.config.SNIRabbitMQANSProperties",
+      "sourceType": "br.gov.ans.snirabbitmq.config.SNIRabbitMQANSProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "ans.snirabbitmq.connection-timeout",
+      "type": "java.lang.Integer",
+      "sourceType": "br.gov.ans.snirabbitmq.config.SNIRabbitMQANSProperties",
+      "defaultValue": 0
+    },
+    {
+      "name": "ans.snirabbitmq.consume-timeout",
+      "type": "java.lang.Integer",
+      "sourceType": "br.gov.ans.snirabbitmq.config.SNIRabbitMQANSProperties",
+      "defaultValue": 0
+    },
+    {
+      "name": "ans.snirabbitmq.host",
+      "type": "java.lang.String",
+      "sourceType": "br.gov.ans.snirabbitmq.config.SNIRabbitMQANSProperties"
+    },
+    {
+      "name": "ans.snirabbitmq.port",
+      "type": "java.lang.Integer",
+      "sourceType": "br.gov.ans.snirabbitmq.config.SNIRabbitMQANSProperties",
+      "defaultValue": 0
+    },
+    {
+      "name": "ans.snirabbitmq.rabbitmq-password",
+      "type": "java.lang.String",
+      "sourceType": "br.gov.ans.snirabbitmq.config.SNIRabbitMQANSProperties"
+    },
+    {
+      "name": "ans.snirabbitmq.rabbitmq-username",
+      "type": "java.lang.String",
+      "sourceType": "br.gov.ans.snirabbitmq.config.SNIRabbitMQANSProperties"
+    },
+    {
+      "name": "ans.snirabbitmq.reply-timeout",
+      "type": "java.lang.Integer",
+      "sourceType": "br.gov.ans.snirabbitmq.config.SNIRabbitMQANSProperties",
+      "defaultValue": 0
+    },
+    {
+      "name": "ans.snirabbitmq.sni-host-name",
+      "type": "java.lang.String",
+      "sourceType": "br.gov.ans.snirabbitmq.config.SNIRabbitMQANSProperties"
+    },
+    {
+      "name": "ans.snirabbitmq.ssl-algorithm",
+      "type": "java.lang.String",
+      "sourceType": "br.gov.ans.snirabbitmq.config.SNIRabbitMQANSProperties"
+    },
+    {
+      "name": "ans.snirabbitmq.trust-store-location",
+      "type": "java.lang.String",
+      "sourceType": "br.gov.ans.snirabbitmq.config.SNIRabbitMQANSProperties"
+    },
+    {
+      "name": "ans.snirabbitmq.trust-store-password",
+      "type": "java.lang.String",
+      "sourceType": "br.gov.ans.snirabbitmq.config.SNIRabbitMQANSProperties"
+    },
+    {
+      "name": "ans.snirabbitmq.trust-store-type",
+      "type": "java.lang.String",
+      "sourceType": "br.gov.ans.snirabbitmq.config.SNIRabbitMQANSProperties"
+    },
+    {
+      "name": "ans.snirabbitmq.virtual-host",
+      "type": "java.lang.String",
+      "sourceType": "br.gov.ans.snirabbitmq.config.SNIRabbitMQANSProperties"
+    }
+  ],
+  "hints": []
+}
