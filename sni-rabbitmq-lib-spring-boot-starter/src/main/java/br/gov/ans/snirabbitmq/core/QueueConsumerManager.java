@@ -4,34 +4,36 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.commons.lang3.SerializationUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
-
+@Component
 public class QueueConsumerManager implements InitializingBean {
-
+	 private static final Logger logger=LoggerFactory.getLogger(QueueConsumerManager.class); // NOSONAR
 	private final Map<String, QueueConsumerEncapsulator> queueConsumers = new TreeMap<>();
-
 	@Override
 	public void afterPropertiesSet() throws Exception {
 		startAllQueueConsumers();
-
 	}
 
 	public void addQueueConsumer(QueueConsumer queueConsumer) {
-		this.addQueueConsumer(queueConsumer, 1);
-	}
-
-	public void addQueueConsumer(QueueConsumer queueConsumer, int instances) {
-		Assert.isTrue((instances < 1), "the instances number must be bigger than one");
-		QueueConsumerEncapsulator qce = new QueueConsumerEncapsulator(queueConsumer, instances);
+		Assert.isTrue((queueConsumer.getConcurrentInstaces() > 0), "the instances number must be bigger than one");
+		logger.debug("Adding "+queueConsumer.getConcurrentInstaces()+ " of a QueueConsumer with queue name "+ queueConsumer.getQueueName());
+		QueueConsumerEncapsulator qce = new QueueConsumerEncapsulator(queueConsumer, queueConsumer.getConcurrentInstaces());
 		stopSpecificQueueConsumers(queueConsumer.getQueueName());
-		queueConsumers.put(qce.getQueueConsumerName(), qce);
+		queueConsumers.put(qce.getQueueConsumer().getQueueName(), qce);
 		startSpecificQueueConsumers(queueConsumer.getQueueName());
+		logger.debug("The instances of Queue Consumer have started");
 	}
 
 	private void startSpecificQueueConsumers(String qce) {
 		this.queueConsumers.forEach((name, consumer) -> {
+			System.out.println(name);
 			if (name.equals(qce)) {
+				System.out.println("start a specific queueConsumer");
+				logger.debug("start a specific queueConsumer");
 				runQueueConsumer(consumer);
 			}
 		});
@@ -41,6 +43,8 @@ public class QueueConsumerManager implements InitializingBean {
 		QueueConsumer[] consumerThreads = consumer.getThreads();
 		for (int i = 0; i < consumerThreads.length; i++) {
 			if (!consumerThreads[i].isThreadStarted()) {
+				System.out.println("running a queue consumer instance"+ i+1);
+				logger.debug("running a queue consumer instance"+ i+1);
 				consumerThreads[i].startQueueConsumer();
 			}
 		}
@@ -49,6 +53,7 @@ public class QueueConsumerManager implements InitializingBean {
 	private void stopSpecificQueueConsumers(String qce) {
 		this.queueConsumers.forEach((name, consumer) -> {
 			if (name.equals(qce)) {
+				logger.debug("stoping specific queue consumer");
 				cancelRunningQueueConsumer(consumer);
 			}
 		});
@@ -57,11 +62,13 @@ public class QueueConsumerManager implements InitializingBean {
 	private void cancelRunningQueueConsumer(QueueConsumerEncapsulator consumer) {
 		QueueConsumer[] consumerThreads = consumer.getThreads();
 		for (int i = 0; i < consumerThreads.length; i++) {
+			logger.debug("canceling queue consumer instance "+ i+1);
 			consumerThreads[i].stopQueueConsumer();
 		}
 	}
 
 	private void startAllQueueConsumers() {
+		logger.debug("startign all queue consumers");
 		this.queueConsumers.forEach((name, consumer) -> {
 			runQueueConsumer(consumer);
 		});
@@ -77,6 +84,7 @@ public class QueueConsumerManager implements InitializingBean {
 			threads = new QueueConsumer[instances];
 			for (int i = 0; i < instances; i++) {
 				threads[i] = SerializationUtils.clone(consumer);
+				threads[i].setConnectionFactory(consumer.getConnectionFactory());
 			}
 			this.queueConsumer = consumer;
 			this.instancesTotal = instances;

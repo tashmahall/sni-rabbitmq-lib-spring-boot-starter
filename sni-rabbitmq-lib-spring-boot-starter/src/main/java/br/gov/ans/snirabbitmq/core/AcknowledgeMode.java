@@ -9,12 +9,12 @@ public enum AcknowledgeMode {
 	/**
 	 * No acks - {@code autoAck=true} in {@code Channel.basicConsume()}.
 	 */
-	NONE,
+	NONE(null),
 
 	/**
 	 * Manual acks - user must ack/nack via a channel aware listener.
 	 */
-	MANUAL,
+	MANUAL(false),
 
 	/**
 	 * Auto - the container will issue the ack/nack based on whether
@@ -22,7 +22,12 @@ public enum AcknowledgeMode {
 	 * <p><em>Do not confuse with RabbitMQ {@code autoAck} which is
 	 * represented by {@link #NONE} here</em>.
 	 */
-	AUTO;
+	AUTO(true);
+	
+	private Boolean autoAck;
+	private AcknowledgeMode (Boolean autoAck){
+	this.autoAck = autoAck;
+}
 
 	/**
 	 * Return if transactions are allowed - if the mode is {@link #AUTO} or
@@ -38,16 +43,9 @@ public enum AcknowledgeMode {
 	 * in RabbitMQ).
 	 * @return true if the mode is {@link #NONE}.
 	 */
-	public boolean isAutoAck() {
-		return this == NONE;
+	public Boolean isAutoAck() {
+		return this.autoAck;
 	}
 
-	/**
-	 * Return true if the mode is {@link #MANUAL}.
-	 * @return true if manual.
-	 */
-	public boolean isManual() {
-		return this == MANUAL;
-	}
 
 }

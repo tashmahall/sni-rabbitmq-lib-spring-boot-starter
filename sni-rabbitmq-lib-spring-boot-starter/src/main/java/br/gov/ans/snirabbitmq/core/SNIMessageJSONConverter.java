@@ -24,6 +24,12 @@ public class SNIMessageJSONConverter implements MessageConverter{
 		return message;
 	}
 
+	@Override
+	public <T> T fromMessage(byte[] message, Class<T> clazz) throws IOException {
+		System.out.println(new String(message));
+		return (T) om.convertValue(new String(message), clazz);
+	}
+
 
 
 

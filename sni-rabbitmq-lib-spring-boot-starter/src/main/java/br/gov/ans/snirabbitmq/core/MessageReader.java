@@ -8,5 +8,6 @@ public interface MessageReader extends Serializable {
 	public String getReaderName();
 	public MessageConverter getMessageConverter();
 	public void readMessage(Channel channel);
-	public void acknowledgeMode(AcknowledgeMode mode);
+	public AcknowledgeMode getAcknowledgeMode();
+	public String getQueueName();
 }

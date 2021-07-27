@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.Serializable;
 
 public interface MessageConverter extends Serializable{
+	public <T> T fromMessage(byte[] message, Class<T> clazz) throws IOException;
 	
 	public <T> T fromMessage(RabbitMQMessage message, Class<T> clazz) throws IOException;
 	

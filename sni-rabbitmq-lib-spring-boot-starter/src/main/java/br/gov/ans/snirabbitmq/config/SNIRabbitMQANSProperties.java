@@ -1,6 +1,5 @@
 package br.gov.ans.snirabbitmq.config;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "ans.snirabbitmq")
