@@ -10,4 +10,6 @@ public interface MessageReader extends Serializable {
 	public void readMessage(Channel channel);
 	public AcknowledgeMode getAcknowledgeMode();
 	public String getQueueName();
+	public String getConsumerTag();
+	public void setConsumerTag(String consumerTag);
 }

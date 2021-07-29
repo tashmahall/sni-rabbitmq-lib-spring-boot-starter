@@ -2,6 +2,9 @@ package br.gov.ans.snirabbitmq.core;
 
 import java.io.IOException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class SNIMessageJSONConverter implements MessageConverter{
@@ -9,6 +12,7 @@ public class SNIMessageJSONConverter implements MessageConverter{
 	 * 
 	 */
 	private static final long serialVersionUID = 7610630009882200877L;
+	private static final Logger log=LoggerFactory.getLogger(SNIMessageJSONConverter.class);
 	private ObjectMapper om = new ObjectMapper();
 	@SuppressWarnings("unchecked")
 	public <T> T fromMessage(RabbitMQMessage message, Class<T> clazz) throws IOException {
@@ -26,8 +30,8 @@ public class SNIMessageJSONConverter implements MessageConverter{
 
 	@Override
 	public <T> T fromMessage(byte[] message, Class<T> clazz) throws IOException {
-		System.out.println(new String(message));
-		return (T) om.convertValue(new String(message), clazz);
+		log.debug("message "+ new String(message));
+		return om.treeToValue(om.readTree(message), clazz);
 	}
 
 

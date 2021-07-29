@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 @Component
 public class QueueConsumerManager implements InitializingBean {
-	 private static final Logger logger=LoggerFactory.getLogger(QueueConsumerManager.class); // NOSONAR
+	private static final Logger logger=LoggerFactory.getLogger(QueueConsumerManager.class); // NOSONAR
 	private final Map<String, QueueConsumerEncapsulator> queueConsumers = new TreeMap<>();
 	@Override
 	public void afterPropertiesSet() throws Exception {
@@ -32,7 +32,6 @@ public class QueueConsumerManager implements InitializingBean {
 		this.queueConsumers.forEach((name, consumer) -> {
 			System.out.println(name);
 			if (name.equals(qce)) {
-				System.out.println("start a specific queueConsumer");
 				logger.debug("start a specific queueConsumer");
 				runQueueConsumer(consumer);
 			}
@@ -78,13 +77,15 @@ public class QueueConsumerManager implements InitializingBean {
 
 		private int instancesTotal;
 		private QueueConsumer queueConsumer;
-		private QueueConsumer[] threads;
+		private QueueConsumer[] arrayConsumers;
 
 		public QueueConsumerEncapsulator(QueueConsumer consumer, int instances) {
-			threads = new QueueConsumer[instances];
+			arrayConsumers = new QueueConsumer[instances];
 			for (int i = 0; i < instances; i++) {
-				threads[i] = SerializationUtils.clone(consumer);
-				threads[i].setConnectionFactory(consumer.getConnectionFactory());
+				arrayConsumers[i] = SerializationUtils.clone(consumer);
+				arrayConsumers[i].setConnectionFactory(consumer.getConnectionFactory());
+				arrayConsumers[i].setConsumer(consumer.getConsumer());
+				
 			}
 			this.queueConsumer = consumer;
 			this.instancesTotal = instances;
@@ -111,7 +112,7 @@ public class QueueConsumerManager implements InitializingBean {
 		}
 
 		protected QueueConsumer[] getThreads() {
-			return this.threads;
+			return this.arrayConsumers;
 		}
 
 		@Override

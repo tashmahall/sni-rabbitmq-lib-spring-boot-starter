@@ -7,11 +7,6 @@ package br.gov.ans.snirabbitmq.core;
 public enum AcknowledgeMode {
 
 	/**
-	 * No acks - {@code autoAck=true} in {@code Channel.basicConsume()}.
-	 */
-	NONE(null),
-
-	/**
 	 * Manual acks - user must ack/nack via a channel aware listener.
 	 */
 	MANUAL(false),
@@ -24,8 +19,8 @@ public enum AcknowledgeMode {
 	 */
 	AUTO(true);
 	
-	private Boolean autoAck;
-	private AcknowledgeMode (Boolean autoAck){
+	private boolean autoAck;
+	private AcknowledgeMode (boolean autoAck){
 	this.autoAck = autoAck;
 }
 
@@ -43,7 +38,7 @@ public enum AcknowledgeMode {
 	 * in RabbitMQ).
 	 * @return true if the mode is {@link #NONE}.
 	 */
-	public Boolean isAutoAck() {
+	public boolean isAutoAck() {
 		return this.autoAck;
 	}
 

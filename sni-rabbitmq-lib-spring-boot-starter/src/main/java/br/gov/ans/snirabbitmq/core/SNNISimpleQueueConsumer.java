@@ -1,54 +1,59 @@
 package br.gov.ans.snirabbitmq.core;
 
 import java.io.IOException;
-import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.AMQP.BasicProperties;
+import com.rabbitmq.client.DefaultConsumer;
+import com.rabbitmq.client.DeliverCallback;
+import com.rabbitmq.client.Envelope;
 
 import br.gov.ans.snirabbitmq.config.SNIRabbitMQConnectionFactory;
 import br.gov.ans.snirabbitmq.core.exceptions.SNIRabbitMQException;
+
 @Component
 public class SNNISimpleQueueConsumer implements QueueConsumer {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 8717697228597324845L;
-	private static final Logger logger=LoggerFactory.getLogger(SNNISimpleQueueConsumer.class); // NOSONAR
-	
+	private static final Logger logger = LoggerFactory.getLogger(SNNISimpleQueueConsumer.class); // NOSONAR
+
 	private transient SNIRabbitMQConnectionFactory connectionFactory;
-	private MessageReader messageReader;
+	private transient AckConfirmConsumer consumer;
 	private boolean started;
 	private String queueName;
 	private transient Thread thread;
 	private int concurrentInstances;
-	private transient Channel channel;
-	
+	private AcknowledgeMode acknowledgeMode;
+	private transient ChannelAndConnectionManager channelAndConnectionManager;
+
 	public SNNISimpleQueueConsumer(SNNISimpleQueueConsumer clone) {
-		Assert.notNull(clone,"It's not possible clone a null object");
-		this.connectionFactory=clone.connectionFactory;
-		this.messageReader=clone.messageReader;
-		this.started=clone.started;
-		this.queueName=clone.queueName;
-		this.thread=clone.thread;
-		this.concurrentInstances=clone.concurrentInstances;
-		this.channel=clone.channel;
+		Assert.notNull(clone, "It's not possible clone a null object");
+		this.connectionFactory = clone.connectionFactory;
+		this.consumer = clone.consumer;
+		this.started = clone.started;
+		this.queueName = clone.queueName;
+		this.thread = clone.thread;
+		this.concurrentInstances = clone.concurrentInstances;
+		this.acknowledgeMode = clone.acknowledgeMode;
 	}
 
-	
-	public SNNISimpleQueueConsumer(SNIRabbitMQConnectionFactory connectionFactory, MessageReader messageReader,	String queueName,int concurrentInstances) {
-		Assert.notNull(connectionFactory,"ConnectionFactory cannot be null");
-		Assert.notNull(messageReader,"MessageReader cannot be null");
-		Assert.notNull(queueName,"QueueName cannot be null");
-		Assert.isTrue( concurrentInstances>0 ,"Concurrent instances cannot be less than 1");
-		this.concurrentInstances= concurrentInstances;
+	public SNNISimpleQueueConsumer(SNIRabbitMQConnectionFactory connectionFactory, AckConfirmConsumer consumer,String queueName, int concurrentInstances, AcknowledgeMode acknowledgeMode) {
+		Assert.notNull(connectionFactory, "ConnectionFactory cannot be null");
+		Assert.notNull(consumer, "Consumer cannot be null");
+		Assert.notNull(queueName, "QueueName cannot be null");
+		Assert.isTrue(concurrentInstances > 0, "Concurrent instances cannot be less than 1");
+		this.concurrentInstances = concurrentInstances;
 		this.connectionFactory = connectionFactory;
-		this.messageReader = messageReader;
+		this.consumer = consumer;
 		this.queueName = queueName;
+		this.acknowledgeMode = acknowledgeMode == null ? AcknowledgeMode.AUTO : AcknowledgeMode.MANUAL;
+		this.channelAndConnectionManager = connectionFactory.getChannelAndConnectionManager();
 	}
 
 	@Override
@@ -63,8 +68,8 @@ public class SNNISimpleQueueConsumer implements QueueConsumer {
 	}
 
 	@Override
-	public MessageReader getMessageReader() {
-		return messageReader;
+	public AckConfirmConsumer getConsumer() {
+		return consumer;
 	}
 
 	@Override
@@ -81,38 +86,73 @@ public class SNNISimpleQueueConsumer implements QueueConsumer {
 
 	@Override
 	public void stopQueueConsumer() {
-		this.started = false;
-
 	}
 
-	private Channel getChannel() throws IOException, TimeoutException {
-		if(this.channel==null) {
-			this.channel = this.getConnectionFactory().getConnection().createChannel();
+	private String generatConsumerTag() {
+		try {
+			return this.channelAndConnectionManager.getChannel().basicConsume(this.queueName, null);
+		} catch (IOException e) {
+			throw new SNIRabbitMQException(e.getMessage(), e);
 		}
-		return channel;
+
 	}
 
-	@Override
-	public void consumeQueueLoop() {
-		while (this.isStarted()) {
-			try {
-				logger.debug("reading queue "+ this.getQueueName());
-				this.getMessageReader().readMessage(this.getChannel());
+	private void consumeQueueLoop() {
+//		String consumerTag = generatConsumerTag();
+		try {
+			logger.debug("reading queue " + this.getQueueName());
+			
+//			this.channelAndConnectionManager.getChannel().queueDeclare(queueName, true, false, false, null);
+//			DeliverCallback deliverCallback = (consumerTagt, delivery) -> {
+//			   String message = new String(delivery.getBody(), "UTF-8");
+//			    System.out.println(" [x] Received '" + message + "'");
+//			};
+//			this.channelAndConnectionManager.getChannel().basicConsume(queueName, acknowledgeMode.isAutoAck(), this.consumer, consumerTagc->{});
+			logger.debug("channel id"+this.channelAndConnectionManager.getChannel().toString());
+			this.consumer.setChannel(this.channelAndConnectionManager.getChannel());
+			this.channelAndConnectionManager.getChannel().basicConsume(queueName, false,"a-consumer-tag", this.consumer);
+//			this.channelAndConnectionManager.getChannel().basicGet(queueName, acknowledgeMode.isAutoAck())
+		} catch (IOException e) {
+			throw new SNIRabbitMQException(e);
+		}
+	}
+	private DefaultConsumer getDefault() {
+		return new DefaultConsumer(this.channelAndConnectionManager.getChannel()) {
+			@Override
+			public void handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties, byte[] body)	throws IOException {
+				try {
+					logger.debug("channel id"+getChannel().toString());
+					logger.debug(consumerTag);
+					String status = new String(body);
+					int i = (int) (Math.random()*1000);
+					if (i % 5 == 0) { // mod 2
+						logger.debug("rejected to dlx message: " + status);
+						getChannel().basicReject(envelope.getDeliveryTag(), false);
+					}
+					if (i % 3 == 0) { // mod 3
+						logger.debug("no ack message " + status);
+						getChannel().basicNack(envelope.getDeliveryTag(), false, true);
+					}
 
-			} catch (IOException | TimeoutException e) {
-				throw new SNIRabbitMQException(e.getMessage(), e);
+					logger.debug("ACK OK " + status); // resto
+					getChannel().basicAck(envelope.getDeliveryTag(), false);
+
+				} catch (IOException e) {
+					throw new SNIRabbitMQException(e);
+				}
+
 			}
-		}
+		};
 	}
+
 	public void setQueueName(String queueName) {
 		Assert.notNull(queueName, "the queue name cannot be null");
 		this.queueName = queueName;
 	}
 
-
 	@Override
 	public boolean isThreadStarted() {
-		if(thread ==null) {
+		if (thread == null) {
 			return false;
 		}
 		return thread.isAlive();
@@ -125,12 +165,18 @@ public class SNNISimpleQueueConsumer implements QueueConsumer {
 
 	@Override
 	public int getConcurrentInstaces() {
-		
+
 		return this.concurrentInstances;
 	}
 
 	public void setConnectionFactory(SNIRabbitMQConnectionFactory connectionFactory) {
 		this.connectionFactory = connectionFactory;
+		this.channelAndConnectionManager = connectionFactory.getChannelAndConnectionManager();
 	}
 
+	@Override
+	public void setConsumer(AckConfirmConsumer consumer) {
+		this.consumer = consumer;
+
+	}
 }

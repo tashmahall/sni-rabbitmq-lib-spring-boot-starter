@@ -2,14 +2,13 @@ package br.gov.ans.snirabbitmq.config;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Serializable;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeoutException;
 
+import javax.annotation.PreDestroy;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SNIServerName;
@@ -21,16 +20,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.util.Assert;
 
-import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+
+import br.gov.ans.snirabbitmq.core.ChannelAndConnectionManager;
 @Configuration
 public class SNIRabbitMQConnectionFactory implements InitializingBean{
 	
 
 
 	private ConnectionFactory connectionFactory;
-	
-	private Connection connection;
 	
 	@Value("${ans.snirabbitmq.host}")
 	private String host;
@@ -71,8 +69,9 @@ public class SNIRabbitMQConnectionFactory implements InitializingBean{
 	@Value("${ans.snirabbitmq.connection-timeout:10000}")
 	private int connectionTimeout;
 	
+	private ChannelAndConnectionManager channelAndConnectionManager;
+	
 	public void afterPropertiesSet() throws Exception {
-		if(this.connection ==null || this.connectionFactory == null) {
 			Assert.notNull(this.host,message("ans.snirabbitmq.host.name"));
 			Assert.notNull(this.port,message("ans.snirabbitmq.host.port"));
 			Assert.notNull(this.virtualHost,message("ans.snirabbitmq.virtual-host"));
@@ -95,9 +94,9 @@ public class SNIRabbitMQConnectionFactory implements InitializingBean{
 			this.connectionFactory.useSslProtocol(sslContext);
 			this.connectionFactory.setSocketFactory(sslContext.getSocketFactory());
 			this.connectionFactory.setVirtualHost(virtualHost);
+			this.connectionFactory.setAutomaticRecoveryEnabled(true);
+			this.connectionFactory.setNetworkRecoveryInterval(5000);
 			
-			this.connection = this.connectionFactory.newConnection();
-		}
 	}
 	private SSLContext getSSLContext() throws GeneralSecurityException, IOException {
         KeyStore tks = KeyStore.getInstance(this.trustStoreType);
@@ -127,10 +126,18 @@ public class SNIRabbitMQConnectionFactory implements InitializingBean{
         return is;
 		
 	}
-	public Connection getConnection() throws IOException, TimeoutException {
-		return this.connectionFactory.newConnection();
-	}
 	public ConnectionFactory getConnectionFactory(){
 		return this.connectionFactory;
+	}
+	public ChannelAndConnectionManager getChannelAndConnectionManager() {
+		if (this.channelAndConnectionManager == null || (!this.channelAndConnectionManager.isChannelOpen()||!this.channelAndConnectionManager.isConnectionOpen()))
+			this.channelAndConnectionManager=new ChannelAndConnectionManager(this);
+		return this.channelAndConnectionManager;
+	}
+	@PreDestroy
+	public void closeConnectionAndChannel() {
+		if (this.channelAndConnectionManager!=null) {
+			this.channelAndConnectionManager.closeConnectionAndChannel();
+		}
 	}
 }
