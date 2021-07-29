@@ -1,4 +1,0 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-br.gov.ans.snirabbitmq.config.SNIRabbitMQConnectionFactory, \
-br.gov.ans.snirabbitmq.core.QueueConsumerManager
-
