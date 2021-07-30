@@ -29,7 +29,7 @@ public class SNIRabbitMQConnectionFactory implements InitializingBean{
 
 
 	private ConnectionFactory connectionFactory;
-	
+	//teste
 	@Value("${ans.snirabbitmq.host}")
 	private String host;
 	

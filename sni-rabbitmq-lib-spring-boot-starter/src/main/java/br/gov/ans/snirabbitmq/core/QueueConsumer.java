@@ -2,8 +2,6 @@ package br.gov.ans.snirabbitmq.core;
 
 import java.io.Serializable;
 
-import com.rabbitmq.client.DefaultConsumer;
-
 import br.gov.ans.snirabbitmq.config.SNIRabbitMQConnectionFactory;
 
 public interface QueueConsumer extends Runnable, Serializable{

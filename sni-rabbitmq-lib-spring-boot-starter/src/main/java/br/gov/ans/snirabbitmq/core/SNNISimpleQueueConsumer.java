@@ -7,11 +7,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import com.rabbitmq.client.AMQP.BasicProperties;
-import com.rabbitmq.client.DefaultConsumer;
-import com.rabbitmq.client.DeliverCallback;
-import com.rabbitmq.client.Envelope;
-
 import br.gov.ans.snirabbitmq.config.SNIRabbitMQConnectionFactory;
 import br.gov.ans.snirabbitmq.core.exceptions.SNIRabbitMQException;
 
@@ -88,61 +83,15 @@ public class SNNISimpleQueueConsumer implements QueueConsumer {
 	public void stopQueueConsumer() {
 	}
 
-	private String generatConsumerTag() {
-		try {
-			return this.channelAndConnectionManager.getChannel().basicConsume(this.queueName, null);
-		} catch (IOException e) {
-			throw new SNIRabbitMQException(e.getMessage(), e);
-		}
-
-	}
-
 	private void consumeQueueLoop() {
-//		String consumerTag = generatConsumerTag();
 		try {
 			logger.debug("reading queue " + this.getQueueName());
 			
-//			this.channelAndConnectionManager.getChannel().queueDeclare(queueName, true, false, false, null);
-//			DeliverCallback deliverCallback = (consumerTagt, delivery) -> {
-//			   String message = new String(delivery.getBody(), "UTF-8");
-//			    System.out.println(" [x] Received '" + message + "'");
-//			};
-//			this.channelAndConnectionManager.getChannel().basicConsume(queueName, acknowledgeMode.isAutoAck(), this.consumer, consumerTagc->{});
-			logger.debug("channel id"+this.channelAndConnectionManager.getChannel().toString());
 			this.consumer.setChannel(this.channelAndConnectionManager.getChannel());
-			this.channelAndConnectionManager.getChannel().basicConsume(queueName, false,"a-consumer-tag", this.consumer);
-//			this.channelAndConnectionManager.getChannel().basicGet(queueName, acknowledgeMode.isAutoAck())
+			this.channelAndConnectionManager.getChannel().basicConsume(queueName, this.acknowledgeMode.isAutoAck(),"a-consumer-tag", this.consumer);
 		} catch (IOException e) {
 			throw new SNIRabbitMQException(e);
 		}
-	}
-	private DefaultConsumer getDefault() {
-		return new DefaultConsumer(this.channelAndConnectionManager.getChannel()) {
-			@Override
-			public void handleDelivery(String consumerTag, Envelope envelope, BasicProperties properties, byte[] body)	throws IOException {
-				try {
-					logger.debug("channel id"+getChannel().toString());
-					logger.debug(consumerTag);
-					String status = new String(body);
-					int i = (int) (Math.random()*1000);
-					if (i % 5 == 0) { // mod 2
-						logger.debug("rejected to dlx message: " + status);
-						getChannel().basicReject(envelope.getDeliveryTag(), false);
-					}
-					if (i % 3 == 0) { // mod 3
-						logger.debug("no ack message " + status);
-						getChannel().basicNack(envelope.getDeliveryTag(), false, true);
-					}
-
-					logger.debug("ACK OK " + status); // resto
-					getChannel().basicAck(envelope.getDeliveryTag(), false);
-
-				} catch (IOException e) {
-					throw new SNIRabbitMQException(e);
-				}
-
-			}
-		};
 	}
 
 	public void setQueueName(String queueName) {
