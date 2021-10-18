@@ -88,6 +88,7 @@ public class SNIRabbitMQConnectionFactory implements InitializingBean{
 			this.connectionFactory.setConnectionTimeout(this.connectionTimeout);
 			this.connectionFactory.setHandshakeTimeout(this.connectionTimeout);
 			this.connectionFactory.setHost(this.host);
+			this.connectionFactory.setUsername(this.rabbitMQUsername);
 			this.connectionFactory.setPassword(this.rabbitMQPassword);
 			this.connectionFactory.setPort(this.port);
 			SSLContext sslContext = getSSLContext();
